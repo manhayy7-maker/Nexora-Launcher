@@ -1,4 +1,9 @@
-﻿/*
+﻿/*import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
  * Zalith Launcher 2
  * Copyright (C) 2025-2026 MovTery <movtery228@qq.com> and contributors
  *
@@ -510,30 +515,74 @@ private fun PetModelContent(
     dockedSide: ActionMenuSide,
     modifier: Modifier = Modifier,
 ) {
-    val account by AccountsManager.currentAccountFlow.collectAsStateWithLifecycle()
-    val refreshWardrobe by AccountsManager.refreshWardrobe.collectAsStateWithLifecycle()
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 18.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF241638),
+                        Color(0xFF120E1B),
+                        Color(0xFF0B0910)
+                    )
+                ),
+                RoundedCornerShape(28.dp)
+            )
+            .border(
+                1.dp,
+                Color(0xFF9B5CFF).copy(alpha = 0.42f),
+                RoundedCornerShape(28.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(104.dp)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFFB77BFF),
+                                Color(0xFF7135D8),
+                                Color(0xFF35145F)
+                            )
+                        ),
+                        RoundedCornerShape(30.dp)
+                    )
+                    .border(
+                        1.dp,
+                        Color(0xFFE1C7FF).copy(alpha = 0.65f),
+                        RoundedCornerShape(30.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "N",
+                    color = Color.White,
+                    style = MaterialTheme.typography.displayLarge,
+                    fontWeight = FontWeight.Black
+                )
+            }
 
-    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    // 偏航角符号与停泊侧相反，让模型面向屏幕内容一侧
-    val yaw = Math.toRadians(
-        ((if (dockedSide == ActionMenuSide.START) 35.0 else -(35.0)) * (if (isRtl) -1 else 1))
-    ).toFloat()
+            Text(
+                text = "NEXORA",
+                color = Color(0xFFF4E9FF),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
 
-    val armModel = account?.skinModelType?.toArmModel()
-    val skinStamp = account?.getSkinFile()?.lastModified()
-    val capeStamp = account?.getCapeFile()?.lastModified()
-    val skinBytes by produceState<ByteArray?>(null, account, refreshWardrobe, skinStamp) {
-        value = withContext(Dispatchers.IO) {
-            account?.getSkinFile()?.takeIf { it.exists() }
-                ?.inputStream()?.use { it.readBytes() }
+            Text(
+                text = "MINECRAFT JAVA LAUNCHER",
+                color = Color(0xFFB99AD8),
+                style = MaterialTheme.typography.labelSmall
+            )
         }
     }
-    val capeBytes by produceState<ByteArray?>(null, account, refreshWardrobe, capeStamp) {
-        value = withContext(Dispatchers.IO) {
-            account?.getCapeFile()?.takeIf { it.exists() }
-                ?.inputStream()?.use { it.readBytes() }
-        }
-    }
+}
 
     PetModelView(
         modifier = modifier,
