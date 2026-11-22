@@ -1,4 +1,5 @@
-/*
+/*import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
  * Zalith Launcher 2
  * Copyright (C) 2025-2026 MovTery <movtery228@qq.com> and contributors
  *
@@ -191,10 +192,10 @@ fun HomeGrid(
             ServerCardManager.onVisibleCardsChanged(ids)
         }
     }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
+     Box(
+    modifier = modifier
+        .fillMaxSize()
+        .background(Color(0xFF0B0910))
             .onGloballyPositioned { coordinates ->
                 state.onViewportPositioned(
                     topPx = coordinates.positionInRoot().y,
@@ -229,13 +230,15 @@ fun HomeGrid(
 
             CardGrid(
                 state = state,
-                containerColor = cardColor(),
-                contentColor = onCardColor(),
+                containerColor = Color(0xFF17111F),
+contentColor = Color(0xFFF3ECFA),
                 cardBackground = { base ->
-                    base.backgroundGlass(
-                        blur = LauncherSettings.backgroundBlur.state,
-                        color = cardColor(),
-                        enabled = true
+    base.backgroundGlass(
+        blur = LauncherSettings.backgroundBlur.state,
+        color = Color(0xFF21182D),
+        enabled = true
+    )
+},
                     )
                 },
             )
