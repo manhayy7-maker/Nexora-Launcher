@@ -1,9 +1,4 @@
-﻿/*import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+/*
  * Zalith Launcher 2
  * Copyright (C) 2025-2026 MovTery <movtery228@qq.com> and contributors
  *
@@ -23,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 
 package com.movtery.zalithlauncher.ui.screens.content
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +37,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -58,6 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -71,6 +71,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
@@ -179,370 +180,69 @@ fun LauncherScreen(
 
             //卡片尺寸与停泊槽内容区保持一致
             val cardWidth = maxWidth * (ActionMenuWeight / (ActionMenuWeight + ContentWeight)) - ActionMenuOuterPadding
-            val cardHeight = maxHeight - ActionMenuOuterPadding * 2
+            val cardHeight = maxHeight - ActionMenuOuterPadding *
 
-            val toAccountManageScreen: () -> Unit = {
-                backStackViewModel.mainScreen.navigateTo(
-                    screenKey = NormalNavKey.AccountManager(FirstLoginMenu.NONE)
-                )
-            }
-            val toVersionManageScreen: () -> Unit = {
-                backStackViewModel.mainScreen.removeAndNavigateTo(
-                    remove = NestedNavKey.VersionSettings::class,
-                    screenKey = NormalNavKey.VersionsManager
-                )
-            }
-            val toVersionSettingsScreen: () -> Unit = {
-                VersionsManager.currentVersion.value?.let { version ->
-                    navigateToVersions(version)
-                }
-            }
-
-            // 内容区域
-            Row(modifier = Modifier.fillMaxSize()) {
-                // ActionMenu 对接到了 Start，留出空位
-                if (dockedSide == ActionMenuSide.START) {
-                    Spacer(modifier = Modifier.weight(ActionMenuWeight))
-                }
-
-                CompositionLocalProvider(
-                    LocalUriHandler provides object : UriHandler {
-                        override fun openUri(uri: String) {
-                            onOpenLink(uri)
-                        }
-                    }
-                ) {
-                    ContentMenu(
-                        modifier = Modifier
-                            .guideNode(
-                                key = GuideKeys.Main.Step.CardTip,
-                                holeShape = RectangleShape
-                            )
-                            .weight(ContentWeight)
-                            .offset { IntOffset(x = dragState.previewShift.value.roundToInt(), y = 0) },
-                        isVisible = isVisible,
-                        onLaunchGame = { version ->
-                            onLaunchGame(version)
-                        },
-                        onQuickPlayServer = onQuickPlayServer,
-                        onOpenVersionSettings = navigateToVersions
-                    )
-                }
-
-                // ActionMenu 对接到了 End，留出空位
-                if (dockedSide == ActionMenuSide.END) {
-                    Spacer(modifier = Modifier.weight(ActionMenuWeight))
-                }
-            }
-
-            CompositionLocalProvider(LocalActionMenuDrag provides dragState) {
-                Box(
-                    modifier = Modifier
-                        .offset {
-                            val translation = if (dragState.floating) {
-                                dragState.cardPosition
-                            } else {
-                                dragState.landingOf(effectiveSide) + dragState.settleOffset.value
-                            }
-                            val x = if (isRtl) parentWidthPx - cardWidth.toPx() - translation.x else translation.x
-                            IntOffset(x.roundToInt(), translation.y.roundToInt())
-                        }
-                        .size(cardWidth, cardHeight)
-                ) {
-                    ActionMenu(
-                        modifier = Modifier.fillMaxSize(),
-                        isVisible = isVisible,
-                        dockedSide = dockedSide,
-                        onLaunchGame = onLaunchGame,
-                        swapDirection = if (dockedSide == ActionMenuSide.END) AnimatedDirection.Right else AnimatedDirection.Left,
-                        pickUpScale = { dragState.scale },
-                        toAccountManageScreen = toAccountManageScreen,
-                        toVersionManageScreen = toVersionManageScreen,
-                        toVersionSettingsScreen = toVersionSettingsScreen
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ContentMenu(
-    isVisible: Boolean,
-    onLaunchGame: (Version) -> Unit,
-    onQuickPlayServer: (Version?, String) -> Unit,
-    onOpenVersionSettings: (Version) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val ctx = rememberAnimatedContext(isVisible = isVisible)
-    val gridState = rememberCardGridState()
-
-    CompositionLocalProvider(
-        LocalHomeCardLauncher provides onLaunchGame,
-        LocalHomeCardVersionSettings provides onOpenVersionSettings,
-        LocalServerCardQuickPlay provides onQuickPlayServer
-    ) {
-        HomeGrid(
-            state = gridState,
-            isVisible = isVisible,
-            modifier = modifier
-                .fillMaxSize()
-                .animated(ctx)
-        )
-    }
-}
-
-@Composable
-private fun AccountAvatarRow(
-    modifier: Modifier = Modifier,
-    avatarSize: Dp = 48.dp,
-    placeholderSize: Dp = 40.dp,
-    textSpacer: Dp = 4.dp,
-    refreshKey: Any? = null,
-) {
-    val account0 by AccountsManager.currentAccountFlow.collectAsStateWithLifecycle()
-    val account = account0
-
-    Row(
-        modifier = modifier.padding(all = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (account != null) {
-            PlayerFace(
-                modifier = Modifier.padding(horizontal = 4.dp),
-                account = account,
-                avatarSize = avatarSize,
-                refreshKey = refreshKey
-            )
-        } else {
-            Icon(
-                modifier = Modifier
-                    .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
-                    .size(placeholderSize),
-                painter = painterResource(R.drawable.ic_add),
-                contentDescription = null
-            )
-        }
-
-        Column(
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(textSpacer)
-        ) {
-            Text(
-                text = account?.username ?: stringResource(R.string.account_add_new_account),
-                maxLines = 1,
-                style = MaterialTheme.typography.titleSmall
-            )
-            if (account != null) {
-                Text(
-                    text = getAccountTypeName(account),
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun VersionListMenu(
-    show: Boolean,
-    versions: List<Version>,
-    menuAnchor: LayoutCoordinates?,
-    version: Version?,
-    onLaunchGame: (Version?) -> Unit,
-    onDismissRequest: () -> Unit,
-) {
-    val menuAnchorBounds = menuAnchor?.boundsInParent()
-    val menuAnchorX = menuAnchorBounds?.left ?: 0f
-    val menuAnchorHeight = menuAnchorBounds?.height ?: 0f
-
-    DropdownMenu(
-        expanded = show && menuAnchor != null && versions.isNotEmpty(),
-        onDismissRequest = onDismissRequest,
-        modifier = Modifier.width(260.dp),
-        offset = DpOffset(
-            x = with(LocalDensity.current) { menuAnchorX.toDp() },
-            y = with(LocalDensity.current) { (-menuAnchorHeight).toDp() } - 8.dp
-        ),
-        shape = MaterialTheme.shapes.extraLarge
-    ) {
-        versions.forEach { version0 ->
-            DropdownMenuItem(
-                text = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CommonVersionInfoLayout(
-                            modifier = Modifier.weight(1f),
-                            version = version0,
-                            iconSize = 28.dp
-                        )
-                        IconButton(
-                            onClick = {
-                                onLaunchGame(version0)
-                                onDismissRequest()
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_play_arrow_filled),
-                                contentDescription = stringResource(R.string.main_launch_game),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                },
-                onClick = {
-                    if (version == version0) return@DropdownMenuItem
-                    VersionsManager.saveVersion(version0)
-                    onDismissRequest()
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun Modifier.versionLayout(
-    swapToVersionManage: () -> Unit,
-    requestOpenVersionList: () -> Unit,
-) = this
-    .actionMenuDragExclusion()
-    .combinedClickable(
-        role = Role.Button,
-        onClick = swapToVersionManage,
-        onLongClick = requestOpenVersionList,
-    )
-
-
-@Composable
-private fun VersionsContent(
-    version: Version?,
-    onLaunchGame: (Version?) -> Unit,
-    toVersionManageScreen: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.height(IntrinsicSize.Max),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        var showList by remember { mutableStateOf(false) }
-        var versionManagerRow by remember { mutableStateOf<LayoutCoordinates?>(null) }
-
-        if (version == null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .clickable(onClick = toVersionManageScreen)
-                    .padding(all = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                MarqueeText(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.versions_manage_no_versions),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow_right_rounded),
-                    contentDescription = stringResource(R.string.versions_manage_install_new)
-                )
-            }
-        } else {
-            val versions by VersionsManager.versions.collectAsStateWithLifecycle()
-
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 版本列表
-                VersionListMenu(
-                    show = showList,
-                    versions = versions,
-                    menuAnchor = versionManagerRow,
-                    version = version,
-                    onLaunchGame = onLaunchGame,
-                    onDismissRequest = { showList = false },
-                )
-
-                // 版本名称/描述
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .versionLayout(
-                            swapToVersionManage = toVersionManageScreen,
-                            requestOpenVersionList = { showList = versions.isNotEmpty() }
-                        )
-                        .padding(horizontal = 8.dp, vertical = 12.dp)
-                        .onGloballyPositioned { coordinates ->
-                            versionManagerRow = coordinates
-                        }
-                ) {
-                    MarqueeText(
-                        text = version.getVersionName(),
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    if (version.isValid()) {
-                        MarqueeText(
-                            text = version.getVersionSummary(),
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    }
-                }
-            }
-
-            // 启动游戏按钮
-            ScalingIconButton(
-                modifier = Modifier.padding(end = 8.dp),
-                onClick = {
-                    onLaunchGame(null)
-                }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_play_arrow_filled),
-                    contentDescription = stringResource(R.string.main_launch_game),
-                )
-            }
-        }
-    }
-}
-
-@Composable
+            @Composable
 private fun PetModelContent(
     dockedSide: ActionMenuSide,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 18.dp)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF241638),
-                        Color(0xFF120E1B),
-                        Color(0xFF0B0910)
-                    )
-                ),
-                RoundedCornerShape(28.dp)
-            )
-            .border(
-                1.dp,
-                Color(0xFF9B5CFF).copy(alpha = 0.42f),
-                RoundedCornerShape(28.dp)
-            ),
-        contentAlignment = Alignment.Center
+    val account by AccountsManager.currentAccountFlow.collectAsStateWithLifecycle()
+    val refreshWardrobe by AccountsManager.refreshWardrobe.collectAsStateWithLifecycle()
+
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    // 偏航角符号与停泊侧相反，让模型面向屏幕内容一侧
+    val yaw = Math.toRadians(
+        ((if (dockedSide == ActionMenuSide.START) 35.0 else -(35.0)) * (if (isRtl) -1 else 1))
+    ).toFloat()
+
+    val armModel = account?.skinModelType?.toArmModel()
+    val skinStamp = account?.getSkinFile()?.lastModified()
+    val capeStamp = account?.getCapeFile()?.lastModified()
+    val skinBytes by produceState<ByteArray?>(null, account, refreshWardrobe, skinStamp) {
+        value = withContext(Dispatchers.IO) {
+            account?.getSkinFile()?.takeIf { it.exists() }
+                ?.inputStream()?.use { it.readBytes() }
+        }
+    }
+    val capeBytes by produceState<ByteArray?>(null, account, refreshWardrobe, capeStamp) {
+        value = withContext(Dispatchers.IO) {
+            account?.getCapeFile()?.takeIf { it.exists() }
+                ?.inputStream()?.use { it.readBytes() }
+        }
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Branding Nexora di atas model skin
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF241638),
+                            Color(0xFF120E1B),
+                            Color(0xFF0B0910)
+                        )
+                    ),
+                    RoundedCornerShape(20.dp)
+                )
+                .border(
+                    1.dp,
+                    Color(0xFF9B5CFF).copy(alpha = 0.42f),
+                    RoundedCornerShape(20.dp)
+                )
+                .padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(104.dp)
+                    .size(48.dp)
                     .background(
                         Brush.linearGradient(
                             listOf(
@@ -551,19 +251,19 @@ private fun PetModelContent(
                                 Color(0xFF35145F)
                             )
                         ),
-                        RoundedCornerShape(30.dp)
+                        RoundedCornerShape(14.dp)
                     )
                     .border(
                         1.dp,
                         Color(0xFFE1C7FF).copy(alpha = 0.65f),
-                        RoundedCornerShape(30.dp)
+                        RoundedCornerShape(14.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "N",
                     color = Color.White,
-                    style = MaterialTheme.typography.displayLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black
                 )
             }
@@ -571,7 +271,7 @@ private fun PetModelContent(
             Text(
                 text = "NEXORA",
                 color = Color(0xFFF4E9FF),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
@@ -581,19 +281,21 @@ private fun PetModelContent(
                 style = MaterialTheme.typography.labelSmall
             )
         }
-    }
-}
 
-    PetModelView(
-        modifier = modifier,
-        skin = skinBytes,
-        cape = capeBytes,
-        arm = armModel,
-        yaw = yaw,
-        animation = PetAnimation.Idle,
-        tapReaction = PetTapReaction.Interact,
-        dragYaw = false
-    )
+        // Model skin pemain (tetap ada)
+        PetModelView(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            skin = skinBytes,
+            cape = capeBytes,
+            arm = armModel,
+            yaw = yaw,
+            animation = PetAnimation.Idle,
+            tapReaction = PetTapReaction.Interact,
+            dragYaw = false
+        )
+    }
 }
 
 @Composable
