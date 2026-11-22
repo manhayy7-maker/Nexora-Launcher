@@ -23,7 +23,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -56,8 +55,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -78,6 +75,8 @@ import com.movtery.zalithlauncher.ui.screens.content.elements.backgroundGlass
 import com.movtery.zalithlauncher.ui.screens.content.home.server.ServerCardManager
 import com.movtery.zalithlauncher.ui.screens.content.home.server.ServerCardSettingsHost
 import com.movtery.zalithlauncher.ui.screens.content.home.version.VersionCardManager
+import com.movtery.zalithlauncher.ui.theme.cardColor
+import com.movtery.zalithlauncher.ui.theme.onCardColor
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /** 主页网格的卡片操作 */
@@ -196,4 +195,173 @@ fun HomeGrid(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background
+            .onGloballyPositioned { coordinates ->
+                state.onViewportPositioned(
+                    topPx = coordinates.positionInRoot().y,
+                    heightPx = coordinates.size.height.toFloat()
+                )
+            }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            val systemCards = HomeCards.systemCards()
+            if (!systemCards.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    systemCards.forEach { systemCard ->
+                        key(systemCard.id) {
+                            Box(modifier = Modifier.padding(horizontal = 6.dp)) {
+                                systemCard.content()
+                            }
+                        }
+                    }
+                }
+            }
+
+            CardGrid(
+                state = state,
+                containerColor = cardColor(),
+                contentColor = onCardColor(),
+                cardBackground = { base ->
+                    base.backgroundGlass(
+                        blur = LauncherSettings.backgroundBlur.state,
+                        color = cardColor(),
+                        enabled = true
+                    )
+                },
+            )
+        }
+        CardGridAutoScroll(
+            state = state,
+            scrollState = scrollState
+        )
+
+        //调整态底部操作栏
+        AnimatedVisibility(
+            visible = state.isAdjusting,
+            enter = fadeIn() + slideInVertically { it / 2 },
+            exit = fadeOut() + slideOutVertically { it / 2 },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 9.dp)
+        ) {
+            AdjustingBar(
+                state = state,
+                onShowSettings = {
+                    operation = HomeCardOperation.ServerCardSettings(it)
+                }
+            )
+        }
+    }
+
+    HomeCardOperation(
+        operation = operation,
+        onChange = { operation = it }
+    )
+}
+
+@Composable
+private fun HomeCardOperation(
+    operation: HomeCardOperation,
+    onChange: (HomeCardOperation) -> Unit
+) {
+    when (operation) {
+        is HomeCardOperation.None -> {}
+        is HomeCardOperation.ServerCardSettings -> {
+            ServerCardSettingsHost(
+                cardId = operation.cardId,
+                onDismiss = { onChange(HomeCardOperation.None) }
+            )
+        }
+    }
+}
+
+/**
+ * 调整态底部操作栏
+ */
+@Composable
+private fun AdjustingBar(
+    state: CardGridState,
+    onShowSettings: (String) -> Unit
+) {
+    val adjustingId = state.adjustingCardId
+    val isServerCard = remember(state.cards, adjustingId) {
+        state.cards.firstOrNull { it.id == adjustingId }?.type?.typeId == HomeCards.SERVER_CARD_TYPE_ID
+    }
+
+    Surface(
+        modifier = Modifier
+            .padding(all = 3.dp)
+            .barGuard(),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shadowElevation = 3.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(all = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AnimatedVisibility(visible = isServerCard && adjustingId != null) {
+                IconButton(
+                    modifier = Modifier.size(34.dp),
+                    onClick = { adjustingId?.let(onShowSettings) }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings_filled),
+                        contentDescription = stringResource(R.string.generic_setting)
+                    )
+                }
+                Spacer(Modifier.width(2.dp))
+            }
+
+            IconButton(
+                modifier = Modifier.size(34.dp),
+                enabled = adjustingId != null,
+                onClick = { adjustingId?.let(state::removeCard) }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_delete_filled),
+                    tint = MaterialTheme.colorScheme.error,
+                    contentDescription = stringResource(R.string.generic_delete)
+                )
+            }
+
+            Spacer(Modifier.width(2.dp))
+
+            IconButton(
+                modifier = Modifier.size(34.dp),
+                onClick = { state.exitAdjusting() }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_check),
+                    contentDescription = stringResource(R.string.generic_done)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 消费落在自身范围内的全部指针事件
+ */
+private fun Modifier.barGuard(): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false).consume()
+        while (true) {
+            val event = awaitPointerEvent()
+            event.changes.forEach { it.consume() }
+            if (event.changes.none { it.pressed }) return@awaitEachGesture
+        }
+    }
+}
