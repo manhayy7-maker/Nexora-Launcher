@@ -1,5 +1,4 @@
-/*import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Color
+/*
  * Zalith Launcher 2
  * Copyright (C) 2025-2026 MovTery <movtery228@qq.com> and contributors
  *
@@ -24,6 +23,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -76,8 +77,6 @@ import com.movtery.zalithlauncher.ui.screens.content.elements.backgroundGlass
 import com.movtery.zalithlauncher.ui.screens.content.home.server.ServerCardManager
 import com.movtery.zalithlauncher.ui.screens.content.home.server.ServerCardSettingsHost
 import com.movtery.zalithlauncher.ui.screens.content.home.version.VersionCardManager
-import com.movtery.zalithlauncher.ui.theme.cardColor
-import com.movtery.zalithlauncher.ui.theme.onCardColor
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /** 主页网格的卡片操作 */
@@ -192,10 +191,11 @@ fun HomeGrid(
             ServerCardManager.onVisibleCardsChanged(ids)
         }
     }
-     Box(
-    modifier = modifier
-        .fillMaxSize()
-        .background(Color(0xFF0B0910))
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFF0B0910))
             .onGloballyPositioned { coordinates ->
                 state.onViewportPositioned(
                     topPx = coordinates.positionInRoot().y,
@@ -231,18 +231,17 @@ fun HomeGrid(
             CardGrid(
                 state = state,
                 containerColor = Color(0xFF17111F),
-contentColor = Color(0xFFF3ECFA),
+                contentColor = Color(0xFFF3ECFA),
                 cardBackground = { base ->
-    base.backgroundGlass(
-        blur = LauncherSettings.backgroundBlur.state,
-        color = Color(0xFF21182D),
-        enabled = true
-    )
-},
+                    base.backgroundGlass(
+                        blur = LauncherSettings.backgroundBlur.state,
+                        color = Color(0xFF21182D),
+                        enabled = true
                     )
                 },
             )
         }
+
         CardGridAutoScroll(
             state = state,
             scrollState = scrollState
